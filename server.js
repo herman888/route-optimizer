@@ -1,56 +1,47 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+
 const app = express();
-
-// Middleware
-app.use(express.json());
 app.use(cors());
+app.use(express.json());
 
-// MongoDB connection
-mongoose.connect('mongodb+srv://<USERNAME>:<PASSWORD>@<CLUSTER>.mongodb.net/routeOptimizer?retryWrites=true&w=majority', {
+// Connect to local MongoDB
+mongoose.connect("mongodb://localhost:27017/mongodbVSCodePlaygroundDB", {
   useNewUrlParser: true,
-  useUnifiedTopology: true
+  useUnifiedTopology: true,
 })
-.then(() => console.log('✅ Connected to MongoDB'))
-.catch(err => console.error('❌ MongoDB connection error:', err));
+.then(() => console.log("✅ MongoDB connected"))
+.catch(err => console.error("❌ MongoDB connection error:", err));
 
-// Define User schema
-const userSchema = new mongoose.Schema({
+const addressSchema = new mongoose.Schema({
   name: String,
   address: String,
-  school: String,
-  registeredDate: Date,
-  lastPackageDate: Date
+  lat: Number,
+  lon: Number,
 });
+const Address = mongoose.model("Address", addressSchema);
 
-const User = mongoose.model('User', userSchema);
-
-// POST route to create a new user
-app.post('/api/users', async (req, res) => {
+// Get all addresses
+app.get("/api/addresses", async (req, res) => {
   try {
-    const user = new User(req.body);
-    await user.save();
-    res.status(201).json({ message: 'User saved' });
+    const addresses = await Address.find({});
+    res.json(addresses);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Failed to save user' });
+    res.status(500).json({ error: "Failed to fetch addresses" });
   }
 });
 
-// GET route to fetch all users (optional for viewing later)
-app.get('/api/users', async (req, res) => {
+// Add a new address
+app.post("/api/addresses", async (req, res) => {
   try {
-    const users = await User.find();
-    res.json(users);
+    const { name, address, lat, lon } = req.body;
+    const newAddress = new Address({ name, address, lat, lon });
+    await newAddress.save();
+    res.json({ success: true, address: newAddress });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Failed to retrieve users' });
+    res.status(400).json({ error: "Failed to add address" });
   }
 });
 
-// Start server
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`🚀 Server is running on http://localhost:${PORT}`);
-});
+app.listen(5000, () => console.log("Server runninng on port 5000"));
