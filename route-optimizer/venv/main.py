@@ -37,7 +37,11 @@ def generate_route(data: RouteRequest):
     # Step 2: Geocode locations
     coords = []
     for location in all_locations:
-        r = requests.get(
+        r =        r = requests.get(
+            "https://api.openrouteservice.org/geocode/search",
+            params={"api_key": ORS_API_KEY, "text": location}
+        )   
+        requests.get(
             "https://api.openrouteservice.org/geocode/search",
             params={"api_key": ORS_API_KEY, "text": location}
         )

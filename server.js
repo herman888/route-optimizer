@@ -1,47 +1,34 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
+const { execFile } = require('child_process');
 
 const app = express();
+const PORT = process.env.PORT || 5000;
+
 app.use(cors());
 app.use(express.json());
 
-// Connect to local MongoDB
-mongoose.connect("mongodb://localhost:27017/mongodbVSCodePlaygroundDB", {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log("✅ MongoDB connected"))
-.catch(err => console.error("❌ MongoDB connection error:", err));
+// Serve static HTML + assets from /public folder
+app.use(express.static(path.join(__dirname, 'public')));
 
-const addressSchema = new mongoose.Schema({
-  name: String,
-  address: String,
-  lat: Number,
-  lon: Number,
-});
-const Address = mongoose.model("Address", addressSchema);
+// API endpoint to run Python script
+app.get('/run-python', (req, res) => {
+  // Adjust this to your Python file path
+  const scriptPath = path.join(__dirname, 'main.py');
 
-// Get all addresses
-app.get("/api/addresses", async (req, res) => {
-  try {
-    const addresses = await Address.find({});
-    res.json(addresses);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to fetch addresses" });
-  }
+  execFile('python3', [scriptPath], (error, stdout, stderr) => {
+    if (error) {
+      console.error('Python script error:', error);
+      return res.status(500).send('Error running Python script');
+    }
+    if (stderr) {
+      console.error('Python stderr:', stderr);
+    }
+    res.send(stdout); // send Python script output as response
+  });
 });
 
-// Add a new address
-app.post("/api/addresses", async (req, res) => {
-  try {
-    const { name, address, lat, lon } = req.body;
-    const newAddress = new Address({ name, address, lat, lon });
-    await newAddress.save();
-    res.json({ success: true, address: newAddress });
-  } catch (err) {
-    res.status(400).json({ error: "Failed to add address" });
-  }
+app.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}`);
 });
-
-app.listen(5000, () => console.log("Server runninng on port 5000"));

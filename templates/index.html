@@ -8,10 +8,9 @@
         body { font-family: Arial, sans-serif; margin: 10px; }
         input, button { padding: 5px; margin: 5px; width: 300px; }
         #places { margin-bottom: 10px; }
-        #summary { margin: 10px 0; font-size: 1.1em; }
     </style>
     <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" hr   ef="https://unpkg.com/leaflet/dist/leaflet.css" />
 </head>
 <body>
     <h1>Route Optimizer</h1>
@@ -21,8 +20,20 @@
         <input id="end" type="text" placeholder="End location (e.g. Tim Hortons)" />
         <button id="routeBtn">Get Route</button>
     </div>
-    <div id="summary"></div>
     <div id="map"></div>
+    <br>
+    <div>
+        <table>
+            <tr id=>
+                <th>Distance</th>
+                <th>Time</th>
+            </tr>
+            <tr>
+
+            </tr>
+        
+        </table>
+    </div>
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -35,7 +46,6 @@
         }).addTo(map);
 
         let routeLayer = null;
-        let stopMarkers = [];
 
         document.getElementById('routeBtn').addEventListener('click', async () => {
             const start = document.getElementById('start').value.trim();
@@ -65,72 +75,17 @@
 
                 const data = await response.json();
 
-                // Show summary info (distance and time)
-                if (
-                    data &&
-                    data.features &&
-                    data.features[0] &&
-                    data.features[0].properties &&
-                    data.features[0].properties.summary
-                ) {
-                    const summary = data.features[0].properties.summary;
-                    document.getElementById('summary').innerHTML =
-                        `<b>Distance:</b> ${(summary.distance / 1000).toFixed(2)} km<br>
-                         <b>Estimated Time:</b> ${(summary.duration / 60).toFixed(1)} min`;
-                } else {
-                    document.getElementById('summary').innerHTML = '';
-                }
-
-                // Remove previous route and markers
                 if (routeLayer) {
                     map.removeLayer(routeLayer);
                 }
-                stopMarkers.forEach(marker => map.removeLayer(marker));
-                stopMarkers = [];
 
-                // Draw route
                 routeLayer = L.geoJSON(data).addTo(map);
                 map.fitBounds(routeLayer.getBounds());
-
-                // Draw pins/circles for each stop
-                if (
-                    data &&
-                    data.features &&
-                    data.features[0] &&
-                    data.features[0].geometry &&
-                    data.features[0].geometry.coordinates
-                ) {
-                    const routeCoords = data.features[0].geometry.coordinates; // [lon, lat]
-                    // For each input place, pick the corresponding route coordinate
-                    // Start: first, End: last, Midpoint: middle (if exists)
-                    let stopCoords = [];
-                    if (places.length === 2) {
-                        stopCoords = [
-                            routeCoords[0],
-                            routeCoords[routeCoords.length - 1]
-                        ];
-                    } else if (places.length === 3) {
-                        stopCoords = [
-                            routeCoords[0],
-                            routeCoords[Math.floor(routeCoords.length / 2)],
-                            routeCoords[routeCoords.length - 1]
-                        ];
-                    }
-
-                    stopCoords.forEach((coord, idx) => {
-                        const marker = L.circleMarker([coord[1], coord[0]], {
-                            radius: 8,
-                            color: 'red',
-                            fillColor: '#f03',
-                            fillOpacity: 0.7
-                        }).addTo(map)
-                        .bindPopup(`Stop ${idx + 1}: ${places[idx]}`);
-                        stopMarkers.push(marker);
-                    });
-                }
 
             } catch (err) {
                 alert('Error fetching route: ' + err.message);
             }
         });
     </script>
+</body>
+</html>
