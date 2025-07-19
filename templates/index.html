@@ -8,6 +8,7 @@
         body { font-family: Arial, sans-serif; margin: 10px; }
         input, button { padding: 5px; margin: 5px; width: 300px; }
         #places { margin-bottom: 10px; }
+        #summary { margin: 10px 0; font-size: 1.1em; }
     </style>
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
@@ -20,6 +21,7 @@
         <input id="end" type="text" placeholder="End location (e.g. Tim Hortons)" />
         <button id="routeBtn">Get Route</button>
     </div>
+    <div id="summary"></div>
     <div id="map"></div>
 
     <!-- Leaflet JS -->
@@ -62,6 +64,22 @@
                 }
 
                 const data = await response.json();
+
+                // Show summary info (distance and time)
+                if (
+                    data &&
+                    data.features &&
+                    data.features[0] &&
+                    data.features[0].properties &&
+                    data.features[0].properties.summary
+                ) {
+                    const summary = data.features[0].properties.summary;
+                    document.getElementById('summary').innerHTML =
+                        `<b>Distance:</b> ${(summary.distance / 1000).toFixed(2)} km<br>
+                         <b>Estimated Time:</b> ${(summary.duration / 60).toFixed(1)} min`;
+                } else {
+                    document.getElementById('summary').innerHTML = '';
+                }
 
                 // Remove previous route and markers
                 if (routeLayer) {
@@ -116,5 +134,3 @@
             }
         });
     </script>
-</body>
-</html>
