@@ -1,15 +1,23 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { MapContainer, TileLayer, GeoJSON, CircleMarker, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
 const DEFAULT_POSITION = [43.7, -79.4]; // Toronto
+const ORS_API_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImU3YmU3YTEwYTRmMTQ3ZDFhNWIyNTQyYTlmODY2NTFiIiwiaCI6Im11cm11cjY0In0=";
 
 function FitBounds({ geojson }) {
   const map = useMap();
   React.useEffect(() => {
     if (geojson && geojson.features && geojson.features[0]) {
-      const layer = new GeoJSON({ data: geojson });
-      map.fitBounds(layer.getBounds());
+      const bounds = [];
+      if (geojson.features[0].geometry && geojson.features[0].geometry.coordinates) {
+        geojson.features[0].geometry.coordinates.forEach(coord => {
+          bounds.push([coord[1], coord[0]]);
+        });
+        if (bounds.length > 0) {
+          map.fitBounds(bounds);
+        }
+      }
     }
   }, [geojson, map]);
   return null;
@@ -21,8 +29,8 @@ function Sidebar({ show, onClose, summary, onRegister }) {
       style={{
         position: "fixed",
         top: 0,
-        left: show ? 0 : -240,
-        width: 240,
+        left: show ? 0 : -280,
+        width: 280,
         height: "100%",
         background: "#fff",
         boxShadow: "2px 0 8px rgba(0,0,0,0.1)",
@@ -60,7 +68,7 @@ function Sidebar({ show, onClose, summary, onRegister }) {
         }}
         onClick={() => alert(summary || "No trip breakdown available.")}
       >
-        Trip Breakdowns
+        Trip Breakdown
       </button>
       <button
         style={{
@@ -75,13 +83,35 @@ function Sidebar({ show, onClose, summary, onRegister }) {
         }}
         onClick={onRegister}
       >
-        Sign Up as a Student in Need
+        Student Registration
       </button>
     </div>
   );
 }
 
 function RegisterPage({ onBack }) {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    school: ''
+  });
+
+  const handleSubmit = () => {
+    if (!formData.name || !formData.email || !formData.school) {
+      alert('Please fill in all fields');
+      return;
+    }
+    alert(`Registration submitted for ${formData.name}!`);
+    setFormData({ name: '', email: '', school: '' });
+  };
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
   return (
     <div style={{ padding: 20 }}>
       <button
@@ -98,24 +128,33 @@ function RegisterPage({ onBack }) {
         ← Back
       </button>
       <h2 style={{ color: "#388e3c" }}>Student Registration</h2>
-      <form>
+      <div>
         <input
           type="text"
+          name="name"
+          value={formData.name}
+          onChange={handleChange}
           placeholder="Full Name"
           style={{ display: "block", margin: "12px 0", padding: 10, width: "100%" }}
         />
         <input
           type="email"
+          name="email"
+          value={formData.email}
+          onChange={handleChange}
           placeholder="Email"
           style={{ display: "block", margin: "12px 0", padding: 10, width: "100%" }}
         />
         <input
           type="text"
+          name="school"
+          value={formData.school}
+          onChange={handleChange}
           placeholder="School Name"
           style={{ display: "block", margin: "12px 0", padding: 10, width: "100%" }}
         />
         <button
-          type="submit"
+          onClick={handleSubmit}
           style={{
             background: "#388e3c",
             color: "#fff",
@@ -129,92 +168,126 @@ function RegisterPage({ onBack }) {
         >
           Register
         </button>
-      </form>
+      </div>
     </div>
   );
 }
 
 function App() {
-  const [start, setStart] = useState("");
-  const [midpoint, setMidpoint] = useState("");
-  const [end, setEnd] = useState("");
+  const [naturalLanguageQuery, setNaturalLanguageQuery] = useState("");
+  const [startLocation, setStartLocation] = useState("");
+  const [endLocation, setEndLocation] = useState("");
+  const [midpoints, setMidpoints] = useState([]);
   const [routeData, setRouteData] = useState(null);
   const [summary, setSummary] = useState("");
   const [stopCoords, setStopCoords] = useState([]);
   const [places, setPlaces] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [registering, setRegistering] = useState(false);
-  const [addressMarkers, setAddressMarkers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [inputMode, setInputMode] = useState("natural"); // "natural" or "manual"
+  const [parsedQuery, setParsedQuery] = useState(null);
 
-  useEffect(() => {
-    fetch("/api/addresses")
-      .then(res => res.json())
-      .then(data => setAddressMarkers(data));
-  }, []);
+  // Add a new midpoint
+  const addMidpoint = () => {
+    setMidpoints([...midpoints, ""]);
+  };
 
-  const handleRoute = async () => {
+  // Remove a midpoint
+  const removeMidpoint = (index) => {
+    const newMidpoints = midpoints.filter((_, i) => i !== index);
+    setMidpoints(newMidpoints);
+  };
+
+  // Update midpoint value
+  const updateMidpoint = (index, value) => {
+    const newMidpoints = [...midpoints];
+    newMidpoints[index] = value;
+    setMidpoints(newMidpoints);
+  };
+
+  // Natural language processing (will call backend)
+  const processNaturalLanguage = async () => {
+    if (!naturalLanguageQuery.trim()) {
+      alert("Please enter your route request in natural language.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch("/api/parse-natural-language", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: naturalLanguageQuery }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        alert("Failed to parse request: " + (err.error || "Unknown error"));
+        return;
+      }
+
+      const parsed = await response.json();
+      setParsedQuery(parsed);
+      
+      // Auto-populate the manual inputs
+      setStartLocation(parsed.start_location || "");
+      setEndLocation(parsed.end_location || "");
+      setMidpoints(parsed.midpoints || []);
+      
+      // Show what was understood
+      alert(`Understood: From "${parsed.start_location}" to "${parsed.end_location}"` + 
+            (parsed.midpoints && parsed.midpoints.length > 0 ? ` via ${parsed.midpoints.join(", ")}` : ""));
+
+    } catch (error) {
+      alert("Error processing natural language: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Enhanced route calculation with multiple midpoints
+  const handleRouteCalculation = async () => {
+    const start = startLocation.trim();
+    const end = endLocation.trim();
+    const validMidpoints = midpoints.filter(m => m.trim() !== "");
+
     if (!start || !end) {
       alert("Please enter at least start and end locations.");
       return;
     }
-    const inputPlaces = midpoint ? [start, midpoint, end] : [start, end];
-    setPlaces(inputPlaces);
+
+    // Build the complete route with all stops
+    const allPlaces = [start, ...validMidpoints, end];
+    setPlaces(allPlaces);
+    setLoading(true);
 
     try {
-      const response = await fetch("/api/route", {
+      const response = await fetch("/api/calculate-route", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ places: inputPlaces }),
+        body: JSON.stringify({ 
+          places: allPlaces,
+          preferences: parsedQuery?.preferences || {},
+          constraints: parsedQuery?.constraints || {}
+        }),
       });
+
       if (!response.ok) {
         const err = await response.json();
-        alert("Failed to get route: " + (err.error || "Unknown error"));
+        alert("Failed to calculate route: " + (err.error || "Unknown error"));
         return;
       }
-      const data = await response.json();
-      setRouteData(data);
 
-      // Summary
-      if (
-        data &&
-        data.features &&
-        data.features[0] &&
-        data.features[0].properties &&
-        data.features[0].properties.summary
-      ) {
-        const s = data.features[0].properties.summary;
-        setSummary(
-          `Distance: ${(s.distance / 1000).toFixed(2)} km | Estimated Time: ${(s.duration / 60).toFixed(1)} min`
-        );
-      } else {
-        setSummary("");
-      }
+      const routeResult = await response.json();
+      setRouteData(routeResult.route);
+      setSummary(routeResult.summary);
+      setStopCoords(routeResult.stop_coordinates);
 
-      // Stop coordinates
-      if (
-        data &&
-        data.features &&
-        data.features[0] &&
-        data.features[0].geometry &&
-        data.features[0].geometry.coordinates
-      ) {
-        const routeCoords = data.features[0].geometry.coordinates;
-        let stops = [];
-        if (inputPlaces.length === 2) {
-          stops = [routeCoords[0], routeCoords[routeCoords.length - 1]];
-        } else if (inputPlaces.length === 3) {
-          stops = [
-            routeCoords[0],
-            routeCoords[Math.floor(routeCoords.length / 2)],
-            routeCoords[routeCoords.length - 1],
-          ];
-        }
-        setStopCoords(stops);
-      } else {
-        setStopCoords([]);
-      }
-    } catch (err) {
-      alert("Error fetching route: " + err.message);
+    } catch (error) {
+      alert("Error calculating route: " + error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -223,8 +296,8 @@ function App() {
   }
 
   return (
-    <div style={{ maxWidth: 480, margin: "auto", padding: 0, position: "relative" }}>
-      {/* Top Bar */}
+    <div style={{ maxWidth: 500, margin: "auto", padding: 0, position: "relative" }}>
+      {/* Top Navigation Bar */}
       <div
         style={{
           background: "#388e3c",
@@ -239,7 +312,7 @@ function App() {
           justifyContent: "space-between",
         }}
       >
-        <span>Giveway</span>
+        <span>AI Route Planner</span>
         <button
           onClick={() => setSidebarOpen(true)}
           style={{
@@ -255,7 +328,7 @@ function App() {
           ☰
         </button>
       </div>
-      {/* Sidebar */}
+
       <Sidebar
         show={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -265,72 +338,235 @@ function App() {
           setRegistering(true);
         }}
       />
-      {/* Main Content */}
+
       <div style={{ padding: 16 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <input
-            value={start}
-            onChange={e => setStart(e.target.value)}
-            placeholder="Start location (e.g. York University)"
-            style={{ padding: 10, fontSize: 16, borderRadius: 6, border: "1px solid #ccc" }}
-          />
-          <input
-            value={midpoint}
-            onChange={e => setMidpoint(e.target.value)}
-            placeholder="Midpoint (optional)"
-            style={{ padding: 10, fontSize: 16, borderRadius: 6, border: "1px solid #ccc" }}
-          />
-          <input
-            value={end}
-            onChange={e => setEnd(e.target.value)}
-            placeholder="End location (e.g. Tim Hortons)"
-            style={{ padding: 10, fontSize: 16, borderRadius: 6, border: "1px solid #ccc" }}
-          />
+        {/* Input Mode Toggle */}
+        <div style={{ marginBottom: 16, display: "flex", gap: 8 }}>
           <button
-            onClick={handleRoute}
+            onClick={() => setInputMode("natural")}
             style={{
-              padding: 12,
-              fontSize: 16,
-              background: "#388e3c",
-              color: "#fff",
-              border: "none",
+              flex: 1,
+              padding: "8px 16px",
+              background: inputMode === "natural" ? "#388e3c" : "#f5f5f5",
+              color: inputMode === "natural" ? "#fff" : "#666",
+              border: "1px solid #ddd",
               borderRadius: 6,
-              marginTop: 8,
-              fontWeight: "bold",
+              cursor: "pointer",
             }}
           >
-            Get Route
+            Natural Language
+          </button>
+          <button
+            onClick={() => setInputMode("manual")}
+            style={{
+              flex: 1,
+              padding: "8px 16px",
+              background: inputMode === "manual" ? "#388e3c" : "#f5f5f5",
+              color: inputMode === "manual" ? "#fff" : "#666",
+              border: "1px solid #ddd",
+              borderRadius: 6,
+              cursor: "pointer",
+            }}
+          >
+            Manual Entry
           </button>
         </div>
-        <div style={{ margin: "12px 0", fontSize: "1.1em", textAlign: "center" }}>{summary}</div>
-        <div style={{ height: 400, width: "100%", borderRadius: 8, overflow: "hidden" }}>
-          <MapContainer center={DEFAULT_POSITION} zoom={11} style={{ height: "100%", width: "100%" }}>
-            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-            {routeData && <GeoJSON data={routeData} style={{ color: "blue", weight: 4 }} />}
+
+        {inputMode === "natural" ? (
+          /* Natural Language Input */
+          <div style={{ marginBottom: 16 }}>
+            <textarea
+              value={naturalLanguageQuery}
+              onChange={e => setNaturalLanguageQuery(e.target.value)}
+              placeholder="Describe your route in natural language... 
+Example: 'I need to go from York University to downtown Toronto, stopping by a coffee shop and avoiding highways'"
+              style={{
+                width: "100%",
+                height: 100,
+                padding: 12,
+                fontSize: 14,
+                borderRadius: 6,
+                border: "1px solid #ccc",
+                resize: "vertical",
+                fontFamily: "Arial, sans-serif"
+              }}
+              disabled={loading}
+            />
+            <button
+              onClick={processNaturalLanguage}
+              disabled={loading}
+              style={{
+                width: "100%",
+                padding: 12,
+                fontSize: 16,
+                background: loading ? "#ccc" : "#2196f3",
+                color: "#fff",
+                border: "none",
+                borderRadius: 6,
+                marginTop: 8,
+                fontWeight: "bold",
+                cursor: loading ? "not-allowed" : "pointer",
+              }}
+            >
+              {loading ? "Processing..." : "Parse Request"}
+            </button>
+          </div>
+        ) : (
+          /* Manual Location Input */
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+            <input
+              value={startLocation}
+              onChange={e => setStartLocation(e.target.value)}
+              placeholder="Start location (e.g., York University)"
+              style={{
+                padding: 10,
+                fontSize: 16,
+                borderRadius: 6,
+                border: "1px solid #ccc",
+                outline: "none",
+              }}
+              disabled={loading}
+            />
+
+            {/* Dynamic Midpoints */}
+            {midpoints.map((midpoint, index) => (
+              <div key={index} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <input
+                  value={midpoint}
+                  onChange={e => updateMidpoint(index, e.target.value)}
+                  placeholder={`Midpoint ${index + 1} (e.g., Coffee shop)`}
+                  style={{
+                    flex: 1,
+                    padding: 10,
+                    fontSize: 16,
+                    borderRadius: 6,
+                    border: "1px solid #ccc",
+                    outline: "none",
+                  }}
+                  disabled={loading}
+                />
+                <button
+                  onClick={() => removeMidpoint(index)}
+                  style={{
+                    background: "#f44336",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 4,
+                    padding: "8px 12px",
+                    cursor: "pointer",
+                    fontSize: 14,
+                  }}
+                  disabled={loading}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+
+            <button
+              onClick={addMidpoint}
+              style={{
+                padding: "8px 16px",
+                background: "#4caf50",
+                color: "#fff",
+                border: "none",
+                borderRadius: 6,
+                cursor: "pointer",
+                fontSize: 14,
+                alignSelf: "flex-start",
+              }}
+              disabled={loading}
+            >
+              + Add Midpoint
+            </button>
+
+            <input
+              value={endLocation}
+              onChange={e => setEndLocation(e.target.value)}
+              placeholder="End location (e.g., Tim Hortons Downtown)"
+              style={{
+                padding: 10,
+                fontSize: 16,
+                borderRadius: 6,
+                border: "1px solid #ccc",
+                outline: "none",
+              }}
+              disabled={loading}
+            />
+          </div>
+        )}
+
+        {/* Calculate Route Button */}
+        <button
+          onClick={handleRouteCalculation}
+          disabled={loading || (!startLocation && !naturalLanguageQuery)}
+          style={{
+            width: "100%",
+            padding: 12,
+            fontSize: 16,
+            background: loading ? "#ccc" : "#388e3c",
+            color: "#fff",
+            border: "none",
+            borderRadius: 6,
+            fontWeight: "bold",
+            cursor: loading ? "not-allowed" : "pointer",
+            marginBottom: 16,
+          }}
+        >
+          {loading ? "Calculating Route..." : "Calculate Optimal Route"}
+        </button>
+
+        {/* Route Summary */}
+        <div style={{
+          margin: "12px 0",
+          fontSize: "1.1em",
+          textAlign: "center",
+          color: "#388e3c",
+          fontWeight: "500",
+          minHeight: "1.5em"
+        }}>
+          {summary}
+        </div>
+
+        {/* Interactive Map */}
+        <div style={{
+          height: 400,
+          width: "100%",
+          borderRadius: 8,
+          overflow: "hidden",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+        }}>
+          <MapContainer
+            center={DEFAULT_POSITION}
+            zoom={11}
+            style={{ height: "100%", width: "100%" }}
+          >
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='© OpenStreetMap contributors'
+            />
+            {routeData && (
+              <GeoJSON
+                data={routeData}
+                style={{
+                  color: "#2196f3",
+                  weight: 4,
+                  opacity: 0.8
+                }}
+              />
+            )}
             {routeData && <FitBounds geojson={routeData} />}
             {stopCoords.map((coord, idx) => (
               <CircleMarker
                 key={idx}
                 center={[coord[1], coord[0]]}
-                radius={12}
-                color="red"
-                fillColor="#f03"
-                fillOpacity={0.7}
-              >
-                <title>{`Stop ${idx + 1}: ${places[idx]}`}</title>
-              </CircleMarker>
-            ))}
-            {/* MongoDB Address Markers */}
-            {addressMarkers.map((addr, idx) => (
-              <CircleMarker
-                key={`addr-${idx}`}
-                center={[addr.lat, addr.lon]}
-                radius={8}
-                color="green"
-                fillColor="#388e3c"
+                radius={idx === 0 ? 15 : idx === stopCoords.length - 1 ? 15 : 10}
+                color={idx === 0 ? "#4caf50" : idx === stopCoords.length - 1 ? "#f44336" : "#ff9800"}
+                fillColor={idx === 0 ? "#4caf50" : idx === stopCoords.length - 1 ? "#f44336" : "#ff9800"}
                 fillOpacity={0.8}
+                weight={2}
               >
-                <title>{addr.name}</title>
+                <title>{places[idx]} {idx === 0 ? "(Start)" : idx === stopCoords.length - 1 ? "(End)" : "(Stop)"}</title>
               </CircleMarker>
             ))}
           </MapContainer>
