@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Route Optimizer</title>
+    <meta charset="utf-8" />
+    <style>
+        #map { height: 600px; width: 100%; }
+        body { font-family: Arial, sans-serif; margin: 10px; }
+        input, button { padding: 5px; margin: 5px; width: 300px; }
+        #places { margin-bottom: 10px; }
+    </style>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+</head>
+<body>
+    <h1>Route Optimizer</h1>
+    <div id="places">
+        <input id="start" type="text" placeholder="Start location (e.g. York University)" />
+        <input id="midpoint" type="text" placeholder="Midpoint (optional)" />
+        <input id="end" type="text" placeholder="End location (e.g. Tim Hortons)" />
+        <button id="routeBtn">Get Route</button>
+    </div>
+    <div id="map"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script>
+        const map = L.map('map').setView([43.7, -79.4], 11); // Toronto area
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        let routeLayer = null;
+
+        document.getElementById('routeBtn').addEventListener('click', async () => {
+            const start = document.getElementById('start').value.trim();
+            const midpoint = document.getElementById('midpoint').value.trim();
+            const end = document.getElementById('end').value.trim();
+
+            if (!start || !end) {
+                alert('Please enter at least start and end locations.');
+                return;
+            }
+
+            // Build places array
+            const places = midpoint ? [start, midpoint, end] : [start, end];
+
+            try {
+                const response = await fetch('/api/route', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ places })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    alert('Failed to get route: ' + (err.error || 'Unknown error'));
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (routeLayer) {
+                    map.removeLayer(routeLayer);
+                }
+
+                routeLayer = L.geoJSON(data).addTo(map);
+                map.fitBounds(routeLayer.getBounds());
+
+            } catch (err) {
+                alert('Error fetching route: ' + err.message);
+            }
+        });
+    </script>
+</body>
+</html>
