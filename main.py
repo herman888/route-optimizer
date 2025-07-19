@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 import requests
+from pymongo import MongoClient
 
 app = Flask(__name__)
 
@@ -28,30 +29,28 @@ def get_route(coordinates, profile="driving-car"):
     res.raise_for_status()
     return res.json()
 
-@app.route('/')
-def home():
-    return render_template("index.html")
-
 @app.route('/api/route', methods=['POST'])
 def route_api():
     data = request.json
     places = data.get('places', [])
-    print("Received places:", places)  # Debug log
-
     if len(places) < 2:
         return jsonify({"error": "At least two places are required"}), 400
-
     try:
         coords = [geocode_location(p) for p in places]
-        print("Coordinates:", coords)  # Debug log
-
         route = get_route(coords)
-        print("Route data received")  # Debug log
-
         return jsonify(route)
     except Exception as e:
-        print("Error:", e)
         return jsonify({"error": str(e)}), 500
+
+@app.route('/api/addresses')
+def get_addresses():
+    client = MongoClient("mongodb://localhost:27017")
+    db = client["mongodbVSCodePlaygroundDB"]  # Use your playground DB name
+    addresses = list(db["addresses"].find({}, {"_id": 0, "lat": 1, "lon": 1, "name": 1}))
+    client.close()
+    # Filter out any addresses missing lat/lon
+    addresses = [a for a in addresses if "lat" in a and "lon" in a]
+    return jsonify(addresses)
 
 if __name__ == "__main__":
     app.run(debug=True)
