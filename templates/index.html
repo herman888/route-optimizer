@@ -33,6 +33,7 @@
         }).addTo(map);
 
         let routeLayer = null;
+        let stopMarkers = [];
 
         document.getElementById('routeBtn').addEventListener('click', async () => {
             const start = document.getElementById('start').value.trim();
@@ -62,12 +63,53 @@
 
                 const data = await response.json();
 
+                // Remove previous route and markers
                 if (routeLayer) {
                     map.removeLayer(routeLayer);
                 }
+                stopMarkers.forEach(marker => map.removeLayer(marker));
+                stopMarkers = [];
 
+                // Draw route
                 routeLayer = L.geoJSON(data).addTo(map);
                 map.fitBounds(routeLayer.getBounds());
+
+                // Draw pins/circles for each stop
+                if (
+                    data &&
+                    data.features &&
+                    data.features[0] &&
+                    data.features[0].geometry &&
+                    data.features[0].geometry.coordinates
+                ) {
+                    const routeCoords = data.features[0].geometry.coordinates; // [lon, lat]
+                    // For each input place, pick the corresponding route coordinate
+                    // Start: first, End: last, Midpoint: middle (if exists)
+                    let stopCoords = [];
+                    if (places.length === 2) {
+                        stopCoords = [
+                            routeCoords[0],
+                            routeCoords[routeCoords.length - 1]
+                        ];
+                    } else if (places.length === 3) {
+                        stopCoords = [
+                            routeCoords[0],
+                            routeCoords[Math.floor(routeCoords.length / 2)],
+                            routeCoords[routeCoords.length - 1]
+                        ];
+                    }
+
+                    stopCoords.forEach((coord, idx) => {
+                        const marker = L.circleMarker([coord[1], coord[0]], {
+                            radius: 8,
+                            color: 'red',
+                            fillColor: '#f03',
+                            fillOpacity: 0.7
+                        }).addTo(map)
+                        .bindPopup(`Stop ${idx + 1}: ${places[idx]}`);
+                        stopMarkers.push(marker);
+                    });
+                }
 
             } catch (err) {
                 alert('Error fetching route: ' + err.message);
