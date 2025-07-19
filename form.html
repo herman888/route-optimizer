@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>User Info Form</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f7f7f7;
+    }
+
+    form {
+      background: white;
+      padding: 20px;
+      max-width: 500px;
+      margin: auto;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    label {
+      display: block;
+      margin: 12px 0 4px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    button {
+      padding: 12px 20px;
+      background: #0066ff;
+      color: white;
+      border: none;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    button:hover {
+      background: #004dc1;
+    }
+
+    .message {
+      text-align: center;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+
+  <form id="userForm">
+    <h2>Add User to Delivery System</h2>
+
+    <label for="name">Name</label>
+    <input type="text" id="name" name="name" required>
+
+    <label for="address">Address</label>
+    <input type="text" id="address" name="address" required>
+
+    <label for="school">School</label>
+    <input type="text" id="school" name="school">
+
+    <label for="registeredDate">Registered Date</label>
+    <input type="date" id="registeredDate" name="registeredDate" required>
+
+    <label for="lastPackageDate">Last Package Date</label>
+    <input type="date" id="lastPackageDate" name="lastPackageDate" required>
+
+    <button type="submit">Submit</button>
+
+    <div class="message" id="responseMessage"></div>
+  </form>
+
+  <script>
+    document.getElementById('userForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const formData = {
+        name: document.getElementById('name').value,
+        address: document.getElementById('address').value,
+        school: document.getElementById('school').value,
+        registeredDate: document.getElementById('registeredDate').value,
+        lastPackageDate: document.getElementById('lastPackageDate').value
+      };
+
+      try {
+        const res = await fetch('http://localhost:3001/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+
+        const data = await res.json();
+
+        document.getElementById('responseMessage').textContent = '✅ User added successfully!';
+        document.getElementById('userForm').reset();
+      } catch (err) {
+        console.error(err);
+        document.getElementById('responseMessage').textContent = '❌ Failed to submit form.';
+      }
+    });
+  </script>
+
+</body>
+</html>
