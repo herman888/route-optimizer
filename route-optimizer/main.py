@@ -28,11 +28,12 @@ def get_route(coords, profile: str = "driving-car"):
     validated_coords = []
     for coord in coords:
         if isinstance(coord, list) and len(coord) == 2:
-            lon, lat = coord
-            # Ensure coordinates are numbers and within valid ranges
-            if (isinstance(lon, (int, float)) and isinstance(lat, (int, float)) and
-                -180 <= lon <= 180 and -90 <= lat <= 90):
-                validated_coords.append([float(lon), float(lat)])
+            try:
+                lon, lat = map(float, coord)
+                if -180 <= lon <= 180 and -90 <= lat <= 90:
+                    validated_coords.append([lon, lat])
+            except (ValueError, TypeError):
+                continue
     
     if len(validated_coords) < 2:
         raise ValueError("Need at least 2 valid coordinates")
@@ -68,26 +69,35 @@ def route_api():
         end = places[1]
         
         # Validate start/end are either strings or valid coordinates
-        start_coord = (geocode_location(start) if isinstance(start, str) 
-                      else validate_coordinate(start))
-        end_coord = (geocode_location(end) if isinstance(end, str) 
-                    else validate_coordinate(end))
+        def get_coord(location):
+            if isinstance(location, str):
+                return geocode_location(location)
+            elif isinstance(location, list) and len(location) == 2:
+                try:
+                    lon, lat = map(float, location)
+                    if -180 <= lon <= 180 and -90 <= lat <= 90:
+                        return [lon, lat]
+                except (ValueError, TypeError):
+                    pass
+            return None
+        
+        start_coord = get_coord(start)
+        end_coord = get_coord(end)
         
         if not start_coord or not end_coord:
             return jsonify({"error": "Invalid start or end location"}), 400
         
         # Get student coordinates
         student_coords = []
-        if student_ids:
-            for student_id in student_ids:
-                student = students_data.get(student_id)
-                if student and student.get("address"):
-                    try:
-                        coord = geocode_location(student["address"])
-                        student_coords.append(coord)
-                    except Exception as e:
-                        app.logger.error(f"Failed to geocode student {student_id}: {e}")
-                        continue
+        for student_id in student_ids:
+            student = students_data.get(student_id)
+            if student and student.get("address"):
+                try:
+                    coord = geocode_location(student["address"])
+                    student_coords.append(coord)
+                except Exception as e:
+                    app.logger.error(f"Failed to geocode student {student_id}: {e}")
+                    continue
         
         # Combine coordinates: start -> students -> end
         all_coords = [start_coord] + student_coords + [end_coord]
@@ -96,14 +106,7 @@ def route_api():
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-def validate_coordinate(coord):
-    """Validate and format a coordinate pair"""
-    if (isinstance(coord, list) and len(coord) == 2 and
-        all(isinstance(x, (int, float)) for x in coord) and
-        -180 <= coord[0] <= 180 and -90 <= coord[1] <= 90):
-        return [float(coord[0]), float(coord[1])]
-    return None
+    
 # ── In‑memory storage (simple demo) ─────────────────────────────────────────────
 students_data   = {}
 volunteers_data = {}
