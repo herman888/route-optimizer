@@ -32,15 +32,19 @@ student_counter   = 1
 volunteer_counter = 1
 
 # ── Page views ──────────────────────────────────────────────────────────────────
-@app.route("/")
-def home():
+@app.route("/")                       # splash is now the root
+def splash():
+    return render_template("splash.html")
+
+@app.route("/app")                    # main map lives here
+def main_app():
     return render_template("index.html")
 
-@app.route("/signup")                # generic single‑page sign‑up form
+@app.route("/signup")                 # generic single‑page sign‑up form
 def signup():
     return render_template("form.html")
 
-@app.route("/student-signup")        # dedicated templates (if you keep them)
+@app.route("/student-signup")         # dedicated templates (if you keep them)
 def student_signup():
     return render_template("student_signup.html")
 

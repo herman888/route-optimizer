@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Welcome – GiveWay</title>
+
+<!-- Google Font -->
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+
+<style>
+/* ===== Brand palette (matches main site) ===== */
+:root{
+  --g1:#10b981;         /* emerald */
+  --g2:#34d399;         /* light‑emerald */
+  --accent:#22d3ee;     /* neon‑cyan */
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Nunito',Arial,sans-serif;
+  min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,var(--g1),var(--g2));
+  color:white;
+}
+
+/* ===== Center welcome card ===== */
+#card{text-align:center}
+h1{
+  font-size:3rem;
+  font-weight:800;
+  text-shadow:0 3px 8px rgba(0,0,0,.2);
+  margin-bottom:2rem;
+}
+a#enterBtn{
+  display:inline-block;
+  padding:0.9rem 2.5rem;
+  background:white;color:var(--g1);
+  font-weight:700;border-radius:50px;
+  text-decoration:none;transition:.25s;
+}
+a#enterBtn:hover{transform:scale(1.05);background:var(--accent);color:white;}
+
+/* ===== Help (“?”) button ===== */
+#helpBtn{
+  position:fixed;top:1rem;right:1rem;
+  width:44px;height:44px;border-radius:50%;
+  background:white;color:var(--g1);
+  font-size:1.7rem;font-weight:800;
+  border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 10px rgba(0,0,0,.25);
+  transition:transform .2s;
+}
+#helpBtn:hover{transform:scale(1.1);}
+
+/* ===== Modal overlay ===== */
+#overlay{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.45);
+  display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(2px);
+  opacity:0;pointer-events:none;
+  transition:opacity .3s;
+  z-index:1000;
+}
+#overlay.show{opacity:1;pointer-events:auto;}
+#modal{
+  background:white;color:#111;
+  padding:2rem 2.5rem;border-radius:14px;
+  width:90%;max-width:480px;
+  box-shadow:0 8px 18px rgba(0,0,0,.25);
+}
+#modal h2{margin-bottom:1rem;color:var(--g1);}
+#modal p{line-height:1.5;margin-bottom:1.2rem;}
+#closeBtn{
+  display:block;margin:0 auto;
+  background:var(--g1);color:white;
+  border:none;border-radius:8px;
+  padding:.6rem 1.4rem;font-size:.95rem;cursor:pointer;
+  transition:.2s;
+}
+#closeBtn:hover{background:var(--accent);}
+</style>
+</head>
+<body>
+
+<!-- ===== Help / instructions modal ===== -->
+<div id="overlay">
+  <div id="modal">
+     <h2>What is GiveWay?</h2>
+     <p>
+       <strong>GiveWay</strong> connects volunteer drivers with community members
+       who need a meal. Our routing engine sorts requests by distance so every
+       trip saves time, fuel, and food.
+     </p>
+     <p>
+       <strong>How to use:</strong><br>
+       1&nbsp;·&nbsp;Click “Enter” to open the map.<br>
+       2&nbsp;·&nbsp;Students / recipients sign up to request food.<br>
+       3&nbsp;·&nbsp;Volunteers sign in, view nearby stops, and follow the optimized route.
+     </p>
+     <button id="closeBtn">× Close</button>
+  </div>
+</div>
+
+<!-- ===== Help button ===== -->
+<button id="helpBtn">?</button>
+
+<!-- ===== Center welcome card ===== -->
+<div id="card">
+  <h1>Welcome to<br>GiveWay</h1>
+  <!-- adjust href if your main page lives elsewhere -->
+  <a id="enterBtn" href="/app">Enter</a>
+</div>
+
+<script>
+const helpBtn=document.getElementById('helpBtn'),
+      overlay=document.getElementById('overlay'),
+      closeBtn=document.getElementById('closeBtn');
+
+helpBtn.addEventListener('click',()=>overlay.classList.add('show'));
+closeBtn.addEventListener('click',()=>overlay.classList.remove('show'));
+overlay.addEventListener('click',e=>{
+  if(e.target===overlay) overlay.classList.remove('show');
+});
+</script>
+</body>
+</html>
