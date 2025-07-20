@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Volunteer Registration</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f7f7f7;
+    }
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      background: #f0f0f0;
+      border-bottom: 1px solid #ccc;
+    }
+    .nav-left a {
+      text-decoration: none;
+      color: #0066ff;
+      font-weight: bold;
+    }
+    form {
+      background: white;
+      padding: 30px;
+      max-width: 500px;
+      margin: 20px auto;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #333;
+    }
+    label {
+      display: block;
+      margin: 12px 0 4px;
+      font-weight: bold;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+    textarea {
+      height: 80px;
+      resize: vertical;
+    }
+    button {
+      padding: 12px 20px;
+      background: #28a745;
+      color: white;
+      border: none;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #218838;
+    }
+    .message {
+      text-align: center;
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    .success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="nav-left">
+      <a href="/">← Back to Route Optimizer</a>
+    </div>
+  </nav>
+
+  <form id="volunteerForm">
+    <h2>Volunteer Registration</h2>
+    
+    <label for="name">Full Name</label>
+    <input type="text" id="name" name="name" required>
+    
+    <label for="email">Email Address</label>
+    <input type="email" id="email" name="email" required>
+    
+    <label for="address">Home Address</label>
+    <input type="text" id="address" name="address" required>
+    
+    <label for="phone">Phone Number</label>
+    <input type="tel" id="phone" name="phone" required>
+    
+    <label for="availability">Availability</label>
+    <select id="availability" name="availability" required>
+      <option value="">Select Availability</option>
+      <option value="Weekdays">Weekdays</option>
+      <option value="Weekends">Weekends</option>
+      <option value="Both">Both Weekdays & Weekends</option>
+      <option value="Flexible">Flexible Schedule</option>
+    </select>
+    
+    <label for="vehicle">Do you have a vehicle?</label>
+    <select id="vehicle" name="vehicle" required>
+      <option value="">Select Option</option>
+      <option value="Yes - Car">Yes - Car</option>
+      <option value="Yes - Van/Truck">Yes - Van/Truck</option>
+      <option value="Yes - Motorcycle">Yes - Motorcycle</option>
+      <option value="No">No Vehicle</option>
+    </select>
+    
+    <label for="experience">Previous Volunteer/Delivery Experience</label>
+    <textarea id="experience" name="experience" placeholder="Please describe any relevant experience (optional)"></textarea>
+    
+    <button type="submit">Register as Volunteer</button>
+    <div class="message" id="responseMessage"></div>
+  </form>
+
+  <script>
+    document.getElementById('volunteerForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+  
+      const formData = {
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        address: document.getElementById('address').value,
+        phone: document.getElementById('phone').value,
+        availability: document.getElementById('availability').value,
+        vehicle: document.getElementById('vehicle').value,
+        experience: document.getElementById('experience').value
+      };
+  
+      const responseMsg = document.getElementById('responseMessage');
+      responseMsg.textContent = 'Submitting...';
+      responseMsg.className = 'message';
+  
+      try {
+        const res = await fetch('/api/volunteers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+  
+        const data = await res.json();
+  
+        if (res.ok) {
+          responseMsg.textContent = 'Volunteer registration successful!';
+          responseMsg.className = 'message success';
+          document.getElementById('volunteerForm').reset();
+        } else {
+          responseMsg.textContent = 'Registration failed: ' + (data.error || 'Unknown error');
+          responseMsg.className = 'message error';
+        }
+      } catch (err) {
+        console.error(err);
+        responseMsg.textContent = 'Failed to submit registration.';
+        responseMsg.className = 'message error';
+      }
+    });
+  </script>
+  
+</body>
+</html>

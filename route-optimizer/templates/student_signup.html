@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Student Sign Up</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f7f7f7;
+    }
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      background: #f0f0f0;
+      border-bottom: 1px solid #ccc;
+    }
+    .nav-left a {
+      text-decoration: none;
+      color: #0066ff;
+      font-weight: bold;
+    }
+    form {
+      background: white;
+      padding: 30px;
+      max-width: 500px;
+      margin: 20px auto;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #333;
+    }
+    label {
+      display: block;
+      margin: 12px 0 4px;
+      font-weight: bold;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 12px 20px;
+      background: #0066ff;
+      color: white;
+      border: none;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #004dc1;
+    }
+    .message {
+      text-align: center;
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    .success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="nav-left">
+      <a href="/">← Back to Route Optimizer</a>
+    </div>
+  </nav>
+
+  <form id="studentForm">
+    <h2>Student Sign Up</h2>
+    
+    <label for="name">Full Name</label>
+    <input type="text" id="name" name="name" required>
+    
+    <label for="email">Email Address</label>
+    <input type="email" id="email" name="email" required>
+    
+    <label for="address">Home Address</label>
+    <input type="text" id="address" name="address" required>
+    
+    <label for="phone">Phone Number</label>
+    <input type="tel" id="phone" name="phone" required>
+    
+    <label for="student_id">Student ID</label>
+    <input type="text" id="student_id" name="student_id" required>
+    
+    <label for="program">Program/Major</label>
+    <input type="text" id="program" name="program" required>
+    
+    <label for="year">Year of Study</label>
+    <select id="year" name="year" required>
+      <option value="">Select Year</option>
+      <option value="1st Year">1st Year</option>
+      <option value="2nd Year">2nd Year</option>
+      <option value="3rd Year">3rd Year</option>
+      <option value="4th Year">4th Year</option>
+      <option value="Graduate">Graduate</option>
+    </select>
+    
+    <button type="submit">Register as Student</button>
+    <div class="message" id="responseMessage"></div>
+  </form>
+
+  <script>
+    document.getElementById('studentForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+  
+      const formData = {
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        address: document.getElementById('address').value,
+        phone: document.getElementById('phone').value,
+        student_id: document.getElementById('student_id').value,
+        program: document.getElementById('program').value,
+        year: document.getElementById('year').value
+      };
+  
+      const responseMsg = document.getElementById('responseMessage');
+      responseMsg.textContent = 'Submitting...';
+      responseMsg.className = 'message';
+  
+      try {
+        const res = await fetch('/api/students', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+  
+        const data = await res.json();
+  
+        if (res.ok) {
+          responseMsg.textContent = 'Student registration successful!';
+          responseMsg.className = 'message success';
+          document.getElementById('studentForm').reset();
+        } else {
+          responseMsg.textContent = 'Registration failed: ' + (data.error || 'Unknown error');
+          responseMsg.className = 'message error';
+        }
+      } catch (err) {
+        console.error(err);
+        responseMsg.textContent = 'Failed to submit registration.';
+        responseMsg.className = 'message error';
+      }
+    });
+  </script>
+  
+</body>
+</html>

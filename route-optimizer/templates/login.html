@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f7f7f7;
+    }
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      background: #f0f0f0;
+      border-bottom: 1px solid #ccc;
+    }
+    .nav-left a {
+      text-decoration: none;
+      color: #0066ff;
+      font-weight: bold;
+    }
+    .login-container {
+      background: white;
+      padding: 40px;
+      max-width: 400px;
+      margin: 50px auto;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #333;
+    }
+    label {
+      display: block;
+      margin: 15px 0 5px;
+      font-weight: bold;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 12px 20px;
+      background: #007bff;
+      color: white;
+      border: none;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .signup-links {
+      text-align: center;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+    }
+    .signup-links a {
+      color: #007bff;
+      text-decoration: none;
+      margin: 0 10px;
+    }
+    .signup-links a:hover {
+      text-decoration: underline;
+    }
+    .message {
+      text-align: center;
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="nav-left">
+      <a href="/">← Back to Route Optimizer</a>
+    </div>
+  </nav>
+
+  <div class="login-container">
+    <h2>Login</h2>
+    
+    <form id="loginForm">
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" required>
+      
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" required>
+      
+      <button type="submit">Login</button>
+      <div class="message" id="responseMessage"></div>
+    </form>
+    
+    <div class="signup-links">
+      <p>Don't have an account?</p>
+      <a href="/student-signup">Sign up as Student</a> |
+      <a href="/volunteer">Sign up as Volunteer</a>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      
+      const responseMsg = document.getElementById('responseMessage');
+      responseMsg.textContent = 'Login functionality coming soon...';
+      responseMsg.className = 'message error';
+      
+      // For now, just show a message since login functionality would require 
+      // authentication system which is beyond the current scope
+    });
+  </script>
+  
+</body>
+</html>
