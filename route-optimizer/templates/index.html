@@ -94,7 +94,7 @@ document.getElementById('routeBtn').addEventListener('click', async () => {
   const end = document.getElementById('end').value.trim();
   
   if (!start || !end) {
-    alert('Please enter at least start & end locations');
+    alert('Please enter both start and end locations');
     return;
   }
 
@@ -103,6 +103,10 @@ document.getElementById('routeBtn').addEventListener('click', async () => {
   ).map(el => el.value);
 
   try {
+    const responseMsg = document.getElementById('responseMessage');
+    responseMsg.textContent = 'Calculating route...';
+    responseMsg.className = 'message';
+    
     const res = await fetch('/api/route', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -112,75 +116,91 @@ document.getElementById('routeBtn').addEventListener('click', async () => {
       })
     });
 
-    if (!res.ok) throw await res.json();
-    const data = await res.json();
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to get route');
+    }
 
+    const data = await res.json();
+    
     /* clear old layers */
     if (routeLayer) map.removeLayer(routeLayer);
     stopMarkers.forEach(m => map.removeLayer(m));
     stopMarkers = [];
 
-    /* draw route & fit map */
+    /* draw route */
     routeLayer = L.geoJSON(data, {
-      style: { color: getComputedStyle(document.documentElement).getPropertyValue('--accent') }
+      style: { 
+        color: getComputedStyle(document.documentElement).getPropertyValue('--accent'),
+        weight: 5,
+        opacity: 0.7
+      }
     }).addTo(map);
-    map.fitBounds(routeLayer.getBounds());
+    
+    /* fit map to route */
+    map.fitBounds(routeLayer.getBounds(), { padding: [50, 50] });
 
-    /* get student data for popups */
+    /* get student data for markers */
     const studentData = {};
     if (selectedStudents.length > 0) {
       const studentsRes = await fetch('/api/students');
       const allStudents = await studentsRes.json();
       selectedStudents.forEach(id => {
-        if (allStudents[id]) {
-          studentData[id] = allStudents[id];
-        }
+        if (allStudents[id]) studentData[id] = allStudents[id];
       });
     }
 
     /* add markers */
     const routeCoords = data.features[0].geometry.coordinates;
     
-    // Start point (original color)
+    // Start marker (blue)
     stopMarkers.push(
       L.circleMarker([routeCoords[0][1], routeCoords[0][0]], {
-        radius: 7,
-        color: '#ff5252',
-        fillOpacity: .9
-      }).bindPopup('Start: ' + start).addTo(map)
+        radius: 8,
+        color: '#3388ff',
+        fillColor: '#3388ff',
+        fillOpacity: 1
+      }).bindPopup(`<b>Start:</b> ${start}`).addTo(map)
     );
 
-    // Student points (green) - all middle points
+    // Student markers (green)
     for (let i = 1; i < routeCoords.length - 1; i++) {
       const studentId = selectedStudents[i-1];
       const student = studentData[studentId] || {};
       
       stopMarkers.push(
         L.circleMarker([routeCoords[i][1], routeCoords[i][0]], {
-          radius: 7,
-          color: '#4CAF50',  // Green border
-          fillColor: '#4CAF50',  // Green fill
-          fillOpacity: .9,
+          radius: 8,
+          color: '#4CAF50',
+          fillColor: '#4CAF50',
+          fillOpacity: 1,
           weight: 2
         }).bindPopup(`
           <b>Student Pickup</b><br>
-          Name: ${student.name || 'Unknown'}<br>
-          Address: ${student.address || 'Unknown'}
+          <b>Name:</b> ${student.name || 'Unknown'}<br>
+          <b>Address:</b> ${student.address || 'Unknown'}
         `).addTo(map)
       );
     }
 
-    // End point (original color)
+    // End marker (red)
     stopMarkers.push(
       L.circleMarker([routeCoords[routeCoords.length-1][1], routeCoords[routeCoords.length-1][0]], {
-        radius: 7,
+        radius: 8,
         color: '#ff5252',
-        fillOpacity: .9
-      }).bindPopup('End: ' + end).addTo(map)
+        fillColor: '#ff5252',
+        fillOpacity: 1
+      }).bindPopup(`<b>End:</b> ${end}`).addTo(map)
     );
 
+    responseMsg.textContent = 'Route calculated successfully!';
+    responseMsg.className = 'message success';
+
   } catch(err) {
-    alert('Failed to get route: ' + (err.error || err));
+    const errorMsg = document.getElementById('responseMessage');
+    errorMsg.textContent = 'Error: ' + err.message;
+    errorMsg.className = 'message error';
+    console.error('Routing error:', err);
   }
 });
 /* ---------- Load and display students for selection ---------- */

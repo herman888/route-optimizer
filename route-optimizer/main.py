@@ -19,12 +19,91 @@ def geocode_location(location: str):
 def get_route(coords, profile: str = "driving-car"):
     """Return a GeoJSON route for an ordered list of [lon,lat] coordinates."""
     url = f"https://api.openrouteservice.org/v2/directions/{profile}/geojson"
-    headers = {"Authorization": ORS_API_KEY, "Content-Type": "application/json"}
-    body    = {"coordinates": coords}
-    res     = requests.post(url, headers=headers, json=body)
-    res.raise_for_status()
-    return res.json()
+    headers = {
+        "Authorization": ORS_API_KEY,
+        "Content-Type": "application/json"
+    }
+    
+    # Validate and format coordinates
+    validated_coords = []
+    for coord in coords:
+        if isinstance(coord, list) and len(coord) == 2:
+            lon, lat = coord
+            # Ensure coordinates are numbers and within valid ranges
+            if (isinstance(lon, (int, float)) and isinstance(lat, (int, float)) and
+                -180 <= lon <= 180 and -90 <= lat <= 90):
+                validated_coords.append([float(lon), float(lat)])
+    
+    if len(validated_coords) < 2:
+        raise ValueError("Need at least 2 valid coordinates")
+    
+    body = {
+        "coordinates": validated_coords,
+        "instructions": "false",
+        "geometry": "true"
+    }
+    
+    try:
+        res = requests.post(url, headers=headers, json=body, timeout=10)
+        res.raise_for_status()
+        return res.json()
+    except requests.exceptions.RequestException as e:
+        app.logger.error(f"ORS API Error: {str(e)}")
+        if e.response:
+            app.logger.error(f"Response content: {e.response.text}")
+        raise
 
+@app.route("/api/route", methods=["POST"])
+def route_api():
+    data = request.json
+    places = data.get("places", [])
+    student_ids = data.get("student_ids", [])
+    
+    try:
+        if len(places) != 2:
+            return jsonify({"error": "Exactly 2 places (start and end) required"}), 400
+        
+        # Get coordinates for start and end points
+        start = places[0]
+        end = places[1]
+        
+        # Validate start/end are either strings or valid coordinates
+        start_coord = (geocode_location(start) if isinstance(start, str) 
+                      else validate_coordinate(start))
+        end_coord = (geocode_location(end) if isinstance(end, str) 
+                    else validate_coordinate(end))
+        
+        if not start_coord or not end_coord:
+            return jsonify({"error": "Invalid start or end location"}), 400
+        
+        # Get student coordinates
+        student_coords = []
+        if student_ids:
+            for student_id in student_ids:
+                student = students_data.get(student_id)
+                if student and student.get("address"):
+                    try:
+                        coord = geocode_location(student["address"])
+                        student_coords.append(coord)
+                    except Exception as e:
+                        app.logger.error(f"Failed to geocode student {student_id}: {e}")
+                        continue
+        
+        # Combine coordinates: start -> students -> end
+        all_coords = [start_coord] + student_coords + [end_coord]
+        
+        return jsonify(get_route(all_coords))
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+def validate_coordinate(coord):
+    """Validate and format a coordinate pair"""
+    if (isinstance(coord, list) and len(coord) == 2 and
+        all(isinstance(x, (int, float)) for x in coord) and
+        -180 <= coord[0] <= 180 and -90 <= coord[1] <= 90):
+        return [float(coord[0]), float(coord[1])]
+    return None
 # ── In‑memory storage (simple demo) ─────────────────────────────────────────────
 students_data   = {}
 volunteers_data = {}
@@ -56,42 +135,6 @@ def volunteer():
 def login():
     return render_template("login.html")
 
-# ── Routing API ────────────────────────────────────────────────────────────────
-@app.route("/api/route", methods=["POST"])
-def route_api():
-    data = request.json
-    places = data.get("places", [])
-    student_ids = data.get("student_ids", [])
-    
-    try:
-        # Get coordinates for start/end points (text addresses)
-        coords = []
-        
-        # First process the start/end locations (text addresses)
-        for place in places:
-            if isinstance(place, str):  # It's a text address
-                coords.append(geocode_location(place))
-            elif isinstance(place, list) and len(place) == 2:  # It's already [lon,lat]
-                coords.append(place)
-        
-        # Then add student locations if provided
-        if student_ids:
-            for student_id in student_ids:
-                student = students_data.get(student_id)
-                if student and student.get("address"):
-                    try:
-                        coords.insert(-1, geocode_location(student["address"]))  # Insert before end point
-                    except Exception as e:
-                        app.logger.error(f"Failed to geocode student {student_id}: {e}")
-        
-        if len(coords) < 2:
-            return jsonify({"error": "Need at least 2 valid locations"}), 400
-            
-        return jsonify(get_route(coords))
-        
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    
 # ── Student & Volunteer APIs ───────────────────────────────────────────────────
 @app.route("/api/students", methods=["POST"])
 def add_student():
