@@ -3,7 +3,7 @@ import requests
 
 app = Flask(__name__)
 
-ORS_API_KEY = "your_openrouteservice_api_key"
+ORS_API_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImU3YmU3YTEwYTRmMTQ3ZDFhNWIyNTQyYTlmODY2NTFiIiwiaCI6Im11cm11cjY0In0="
 
 def geocode_location(location):
     url = "https://api.openrouteservice.org/geocode/search"
