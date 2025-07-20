@@ -4,7 +4,7 @@ import requests
 app = Flask(__name__)
 
 # ── OpenRouteService ────────────────────────────────────────────────────────────
-ORS_API_KEY = "YOUR_ORS_KEY_HERE"   # replace with your real key
+ORS_API_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImU3YmU3YTEwYTRmMTQ3ZDFhNWIyNTQyYTlmODY2NTFiIiwiaCI6Im11cm11cjY0In0="   # replace with your real key
 
 def geocode_location(location: str):
     """Return [lon, lat] for a textual place."""
@@ -59,13 +59,39 @@ def login():
 # ── Routing API ────────────────────────────────────────────────────────────────
 @app.route("/api/route", methods=["POST"])
 def route_api():
-    places = request.json.get("places", [])
+    data = request.json
+    places = data.get("places", [])
+    student_ids = data.get("student_ids", [])
+    
     try:
-        coords = [geocode_location(p) for p in places]
+        # Get coordinates for start/end points (text addresses)
+        coords = []
+        
+        # First process the start/end locations (text addresses)
+        for place in places:
+            if isinstance(place, str):  # It's a text address
+                coords.append(geocode_location(place))
+            elif isinstance(place, list) and len(place) == 2:  # It's already [lon,lat]
+                coords.append(place)
+        
+        # Then add student locations if provided
+        if student_ids:
+            for student_id in student_ids:
+                student = students_data.get(student_id)
+                if student and student.get("address"):
+                    try:
+                        coords.insert(-1, geocode_location(student["address"]))  # Insert before end point
+                    except Exception as e:
+                        app.logger.error(f"Failed to geocode student {student_id}: {e}")
+        
+        if len(coords) < 2:
+            return jsonify({"error": "Need at least 2 valid locations"}), 400
+            
         return jsonify(get_route(coords))
+        
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
+    
 # ── Student & Volunteer APIs ───────────────────────────────────────────────────
 @app.route("/api/students", methods=["POST"])
 def add_student():
