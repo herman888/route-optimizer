@@ -3,134 +3,214 @@
 <head>
     <title>Route Optimizer</title>
     <meta charset="utf-8" />
-    <style>
-        #map { height: 600px; width: 100%; }
-        body { font-family: Arial, sans-serif; margin: 10px; }
-        input, button { padding: 5px; margin: 5px; width: 300px; }
-        #places { margin-bottom: 10px; }
-        #summary { margin: 10px 0; font-size: 1.1em; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        nav {
+            display: flex;
+            justify-content: flex-end;
+            padding: 10px;
+            background: #f0f0f0;
+            border-bottom: 1px solid #ccc;
+        }
+
+        #dropdown {
+            display: none;
+            position: absolute;
+            right: 10px;
+            top: 50px;
+            background: white;
+            border: 1px solid #ccc;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        #dropdown a {
+            display: block;
+            padding: 10px 20px;
+            text-decoration: none;
+            color: black;
+        }
+
+        h1 {
+            margin: 20px;
+        }
+
+        #places {
+            padding: 0 20px;
+            margin-bottom: 10px;
+        }
+
+        input, button {
+            display: block;
+            padding: 5px;
+            margin: 5px 0;
+            width: 300px;
+        }
+
+        #summary {
+            padding: 0 20px;
+            font-size: 1.1em;
+        }
+
+        #map {
+            height: 600px;
+            width: 100%;
+        }
+    </style>
 </head>
 <body>
-    <h1>Route Optimizer</h1>
-    <div id="places">
-        <input id="start" type="text" placeholder="Start location (e.g. York University)" />
-        <input id="midpoint" type="text" placeholder="Midpoint (optional)" />
-        <input id="end" type="text" placeholder="End location (e.g. Tim Hortons)" />
-        <button id="routeBtn">Get Route</button>
+
+<!-- Dropdown Menu -->
+<nav>
+    <div style="position: relative;">
+        <button onclick="toggleDropdown()" style="padding: 8px 12px; font-size: 14px; cursor: pointer;">
+            Menu ▾
+        </button>
+        <div id="dropdown">
+            <a href="#">Student Sign Up</a>
+            <a href="#">Volunteer</a>
+            <a href="#">Login</a>
+        </div>
     </div>
-    <div id="summary"></div>
-    <div id="map"></div>
+</nav>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<h1>Route Optimizer</h1>
 
-    <script>
-        const map = L.map('map').setView([43.7, -79.4], 11); // Toronto area
+<div id="places">
+    <input id="start" type="text" placeholder="Start location (e.g. York University)" />
+    <input id="midpoint" type="text" placeholder="Midpoint (optional)" />
+    <input id="end" type="text" placeholder="End location (e.g. Tim Hortons)" />
+    <button id="routeBtn">Get Route</button>
+</div>
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
+<div id="summary"></div>
+<div id="map"></div>
 
-        let routeLayer = null;
-        let stopMarkers = [];
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-        document.getElementById('routeBtn').addEventListener('click', async () => {
-            const start = document.getElementById('start').value.trim();
-            const midpoint = document.getElementById('midpoint').value.trim();
-            const end = document.getElementById('end').value.trim();
+<!-- Dropdown Logic -->
+<script>
+    function toggleDropdown() {
+        const dropdown = document.getElementById('dropdown');
+        dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
+    }
 
-            if (!start || !end) {
-                alert('Please enter at least start and end locations.');
+    window.addEventListener('click', function (e) {
+        const dropdown = document.getElementById('dropdown');
+        if (!e.target.closest('button')) {
+            dropdown.style.display = 'none';
+        }
+    });
+</script>
+
+<!-- Map and Route Logic -->
+<script>
+    const map = L.map('map').setView([43.7, -79.4], 11); // Toronto area
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    let routeLayer = null;
+    let stopMarkers = [];
+
+    document.getElementById('routeBtn').addEventListener('click', async () => {
+        const start = document.getElementById('start').value.trim();
+        const midpoint = document.getElementById('midpoint').value.trim();
+        const end = document.getElementById('end').value.trim();
+
+        if (!start || !end) {
+            alert('Please enter at least start and end locations.');
+            return;
+        }
+
+        const places = midpoint ? [start, midpoint, end] : [start, end];
+
+        try {
+            const response = await fetch('/api/route', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ places })
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                alert('Failed to get route: ' + (err.error || 'Unknown error'));
                 return;
             }
 
-            // Build places array
-            const places = midpoint ? [start, midpoint, end] : [start, end];
+            const data = await response.json();
 
-            try {
-                const response = await fetch('/api/route', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ places })
-                });
-
-                if (!response.ok) {
-                    const err = await response.json();
-                    alert('Failed to get route: ' + (err.error || 'Unknown error'));
-                    return;
-                }
-
-                const data = await response.json();
-
-                // Show summary info (distance and time)
-                if (
-                    data &&
-                    data.features &&
-                    data.features[0] &&
-                    data.features[0].properties &&
-                    data.features[0].properties.summary
-                ) {
-                    const summary = data.features[0].properties.summary;
-                    document.getElementById('summary').innerHTML =
-                        `<b>Distance:</b> ${(summary.distance / 1000).toFixed(2)} km<br>
-                         <b>Estimated Time:</b> ${(summary.duration / 60).toFixed(1)} min`;
-                } else {
-                    document.getElementById('summary').innerHTML = '';
-                }
-
-                // Remove previous route and markers
-                if (routeLayer) {
-                    map.removeLayer(routeLayer);
-                }
-                stopMarkers.forEach(marker => map.removeLayer(marker));
-                stopMarkers = [];
-
-                // Draw route
-                routeLayer = L.geoJSON(data).addTo(map);
-                map.fitBounds(routeLayer.getBounds());
-
-                // Draw pins/circles for each stop
-                if (
-                    data &&
-                    data.features &&
-                    data.features[0] &&
-                    data.features[0].geometry &&
-                    data.features[0].geometry.coordinates
-                ) {
-                    const routeCoords = data.features[0].geometry.coordinates; // [lon, lat]
-                    // For each input place, pick the corresponding route coordinate
-                    // Start: first, End: last, Midpoint: middle (if exists)
-                    let stopCoords = [];
-                    if (places.length === 2) {
-                        stopCoords = [
-                            routeCoords[0],
-                            routeCoords[routeCoords.length - 1]
-                        ];
-                    } else if (places.length === 3) {
-                        stopCoords = [
-                            routeCoords[0],
-                            routeCoords[Math.floor(routeCoords.length / 2)],
-                            routeCoords[routeCoords.length - 1]
-                        ];
-                    }
-
-                    stopCoords.forEach((coord, idx) => {
-                        const marker = L.circleMarker([coord[1], coord[0]], {
-                            radius: 8,
-                            color: 'red',
-                            fillColor: '#f03',
-                            fillOpacity: 0.7
-                        }).addTo(map)
-                        .bindPopup(`Stop ${idx + 1}: ${places[idx]}`);
-                        stopMarkers.push(marker);
-                    });
-                }
-
-            } catch (err) {
-                alert('Error fetching route: ' + err.message);
+            if (
+                data &&
+                data.features &&
+                data.features[0] &&
+                data.features[0].properties &&
+                data.features[0].properties.summary
+            ) {
+                const summary = data.features[0].properties.summary;
+                document.getElementById('summary').innerHTML =
+                    `<b>Distance:</b> ${(summary.distance / 1000).toFixed(2)} km<br>
+                     <b>Estimated Time:</b> ${(summary.duration / 60).toFixed(1)} min`;
+            } else {
+                document.getElementById('summary').innerHTML = '';
             }
-        });
-    </script>
+
+            if (routeLayer) {
+                map.removeLayer(routeLayer);
+            }
+            stopMarkers.forEach(marker => map.removeLayer(marker));
+            stopMarkers = [];
+
+            routeLayer = L.geoJSON(data).addTo(map);
+            map.fitBounds(routeLayer.getBounds());
+
+            if (
+                data &&
+                data.features &&
+                data.features[0] &&
+                data.features[0].geometry &&
+                data.features[0].geometry.coordinates
+            ) {
+                const routeCoords = data.features[0].geometry.coordinates;
+                let stopCoords = [];
+
+                if (places.length === 2) {
+                    stopCoords = [routeCoords[0], routeCoords[routeCoords.length - 1]];
+                } else if (places.length === 3) {
+                    stopCoords = [
+                        routeCoords[0],
+                        routeCoords[Math.floor(routeCoords.length / 2)],
+                        routeCoords[routeCoords.length - 1]
+                    ];
+                }
+
+                stopCoords.forEach((coord, idx) => {
+                    const marker = L.circleMarker([coord[1], coord[0]], {
+                        radius: 8,
+                        color: 'red',
+                        fillColor: '#f03',
+                        fillOpacity: 0.7
+                    }).addTo(map)
+                        .bindPopup(`Stop ${idx + 1}: ${places[idx]}`);
+                    stopMarkers.push(marker);
+                });
+            }
+
+        } catch (err) {
+            alert('Error fetching route: ' + err.message);
+        }
+    });
+</script>
+</body>
+</html>

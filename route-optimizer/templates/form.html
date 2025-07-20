@@ -66,14 +66,8 @@
     <label for="address">Address</label>
     <input type="text" id="address" name="address" required>
 
-    <label for="school">School</label>
-    <input type="text" id="school" name="school">
-
     <label for="registeredDate">Registered Date</label>
     <input type="date" id="registeredDate" name="registeredDate" required>
-
-    <label for="lastPackageDate">Last Package Date</label>
-    <input type="date" id="lastPackageDate" name="lastPackageDate" required>
 
     <button type="submit">Submit</button>
 
@@ -83,24 +77,31 @@
   <script>
     document.getElementById('userForm').addEventListener('submit', async function (e) {
       e.preventDefault();
-
+  
       const formData = {
         name: document.getElementById('name').value,
         address: document.getElementById('address').value,
-        school: document.getElementById('school').value,
         registeredDate: document.getElementById('registeredDate').value,
-        lastPackageDate: document.getElementById('lastPackageDate').value
       };
-
+  
+      // ✅ Get existing array or initialize new one
+      const existingData = JSON.parse(localStorage.getItem('userFormDataList')) || [];
+  
+      // ✅ Add new formData to the array
+      existingData.push(formData);
+  
+      // ✅ Save updated array back to localStorage
+      localStorage.setItem('userFormDataList', JSON.stringify(existingData));
+  
       try {
         const res = await fetch('http://localhost:3001/api/users', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formData)
         });
-
+  
         const data = await res.json();
-
+  
         document.getElementById('responseMessage').textContent = '✅ User added successfully!';
         document.getElementById('userForm').reset();
       } catch (err) {
@@ -109,6 +110,6 @@
       }
     });
   </script>
-
+  
 </body>
 </html>
