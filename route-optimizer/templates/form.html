@@ -1,115 +1,96 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>User Info Form</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      background: #f7f7f7;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Give Way – Sign Up</title>
 
-    form {
-      background: white;
-      padding: 20px;
-      max-width: 500px;
-      margin: auto;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
+<!-- Bulma for quick layout helpers -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+<!-- Google Font -->
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800&display=swap" rel="stylesheet">
 
-    label {
-      display: block;
-      margin: 12px 0 4px;
-    }
-
-    input {
-      width: 100%;
-      padding: 10px;
-      font-size: 16px;
-      margin-bottom: 10px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-    }
-
-    button {
-      padding: 12px 20px;
-      background: #0066ff;
-      color: white;
-      border: none;
-      font-size: 16px;
-      border-radius: 8px;
-      cursor: pointer;
-      width: 100%;
-    }
-
-    button:hover {
-      background: #004dc1;
-    }
-
-    .message {
-      text-align: center;
-      margin-top: 15px;
-    }
-  </style>
+<style>
+body{
+  font-family:'Nunito',Arial,sans-serif;
+  background:linear-gradient(135deg,#10b981,#34d399);
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+}
+#card{
+  background:white;
+  padding:2rem 2.5rem;
+  border-radius:14px;
+  width:95%;max-width:450px;
+  box-shadow:0 10px 20px rgba(0,0,0,.15);
+}
+button{
+  background:#10b981;
+  color:white;
+  border:none;
+}
+button:hover{background:#064e3b;}
+</style>
 </head>
 <body>
 
+<div id="card">
+  <h2 class="title has-text-centered">Add&nbsp;User&nbsp;to&nbsp;Delivery&nbsp;System</h2>
+
   <form id="userForm">
-    <h2>Add User to Delivery System</h2>
+    <div class="field">
+      <label class="label">Name</label>
+      <div class="control"><input class="input" id="name" name="name" required></div>
+    </div>
 
-    <label for="name">Name</label>
-    <input type="text" id="name" name="name" required>
+    <div class="field">
+      <label class="label">Address</label>
+      <div class="control"><input class="input" id="address" name="address" required></div>
+    </div>
 
-    <label for="address">Address</label>
-    <input type="text" id="address" name="address" required>
+    <div class="field">
+      <label class="label">Registered Date</label>
+      <div class="control">
+        <input class="input" id="registeredDate" name="registeredDate" type="date" required>
+      </div>
+    </div>
 
-    <label for="registeredDate">Registered Date</label>
-    <input type="date" id="registeredDate" name="registeredDate" required>
-
-    <button type="submit">Submit</button>
-
-    <div class="message" id="responseMessage"></div>
+    <button class="button is-fullwidth is-medium" type="submit">Submit</button>
+    <p id="responseMessage" class="has-text-centered mt-3"></p>
   </form>
+</div>
 
-  <script>
-    document.getElementById('userForm').addEventListener('submit', async function (e) {
-      e.preventDefault();
-  
-      const formData = {
-        name: document.getElementById('name').value,
-        address: document.getElementById('address').value,
-        registeredDate: document.getElementById('registeredDate').value,
-      };
-  
-      // ✅ Get existing array or initialize new one
-      const existingData = JSON.parse(localStorage.getItem('userFormDataList')) || [];
-  
-      // ✅ Add new formData to the array
-      existingData.push(formData);
-  
-      // ✅ Save updated array back to localStorage
-      localStorage.setItem('userFormDataList', JSON.stringify(existingData));
-  
-      try {
-        const res = await fetch('http://localhost:3001/api/users', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        });
-  
-        const data = await res.json();
-  
-        document.getElementById('responseMessage').textContent = '✅ User added successfully!';
-        document.getElementById('userForm').reset();
-      } catch (err) {
-        console.error(err);
-        document.getElementById('responseMessage').textContent = '❌ Failed to submit form.';
-      }
+<!-- ========== SCRIPT ========== -->
+<script>
+document.getElementById('userForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+
+  const formData={
+    name:document.getElementById('name').value.trim(),
+    address:document.getElementById('address').value.trim(),
+    registeredDate:document.getElementById('registeredDate').value,
+  };
+
+  /* 1️⃣  Persist to localStorage (handy cache / offline) */
+  const list = JSON.parse(localStorage.getItem('userFormDataList')) || [];
+  list.push(formData);
+  localStorage.setItem('userFormDataList', JSON.stringify(list));
+
+  /* 2️⃣  Send to backend API */
+  try{
+    const res = await fetch('http://localhost:3001/api/users',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(formData)
     });
-  </script>
-  
+    if(!res.ok) throw new Error('Server error');
+    /* success */
+    document.getElementById('responseMessage').textContent = '✅ User added successfully!';
+    e.target.reset();
+  }catch(err){
+    console.error(err);
+    document.getElementById('responseMessage').textContent = '❌ Failed to submit form.';
+  }
+});
+</script>
 </body>
 </html>
