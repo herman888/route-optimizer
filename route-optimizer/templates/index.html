@@ -1,3 +1,4 @@
+{% raw %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,239 +6,124 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>GiveWay</title>
 
-<!-- Bulma (lightweight framework) -->
+<!-- Bulma -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css" />
-<!-- Google Font -->
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800&display=swap" rel="stylesheet">
-<!-- Leaflet -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
 <style>
-/* ============== COLOR PALETTE ============== */
-:root{
-  --g1:#10b981;      /* emerald */
-  --g2:#34d399;      /* light‑emerald */
-  --g3:#064e3b;      /* deep‑green */
-  --accent:#22d3ee;  /* neon‑cyan (menu, links) */
-}
-/* ============== GLOBAL ============== */
-body{
-  font-family:'Nunito',Arial,sans-serif;
-  background:linear-gradient(135deg,var(--g1),var(--g2));
-  min-height:100vh;
-  display:flex;flex-direction:column;
-  margin:0;
-}
-/* ============== HEADER ============== */
-#topbar{
-  display:flex;
-  position:relative;
-  align-items:center;
-  padding:.75rem 1rem;
-  background:rgba(0,0,0,0.05);
-}
-#brand{
-  position:absolute;
-  left:50%;transform:translateX(-50%);
-  font-size:2.2rem;
-  font-weight:800;
-  color:white;
-  text-shadow:0 2px 6px rgba(0,0,0,0.25);
-  white-space:nowrap;
-}
-/* Menu button */
-#menuBtn{
-  background:var(--accent);
-  border:none;
-  color:white;
-  font-size:1rem;
-  padding:.45rem .9rem;
-  border-radius:8px;
-  transition:transform .2s;
-  position:relative;overflow:hidden;
-}
+:root{--g1:#10b981;--g2:#34d399;--g3:#064e3b;--accent:#22d3ee;}
+body{font-family:'Nunito',Arial,sans-serif;background:linear-gradient(135deg,var(--g1),var(--g2));min-height:100vh;margin:0;display:flex;flex-direction:column;}
+#topbar{display:flex;position:relative;align-items:center;padding:.75rem 1rem;background:rgba(0,0,0,.05);}
+#brand{position:absolute;left:50%;transform:translateX(-50%);font-size:2.2rem;font-weight:800;color:white;text-shadow:0 2px 6px rgba(0,0,0,.25);}
+#menuBtn{background:var(--accent);border:none;color:white;font-size:1rem;padding:.45rem .9rem;border-radius:8px;transition:.2s;position:relative;overflow:hidden;}
 #menuBtn:hover{transform:scale(1.06);}
-#menuBtn .ripple{
-  position:absolute;border-radius:50%;transform:scale(0);
-  background:white;opacity:.4;animation:ripple .5s linear;
-}
+#menuBtn .ripple{position:absolute;border-radius:50%;transform:scale(0);background:white;opacity:.4;animation:ripple .5s linear;}
 @keyframes ripple{to{transform:scale(4);opacity:0;}}
-
-/* ============== SIDE NAV OVERLAY ============== */
-#overlay{
-  position:fixed;top:0;left:0;width:260px;max-width:80%;height:100vh;
-  background:linear-gradient(180deg,var(--g3),#052e16);
-  padding:2rem 1.5rem;
-  transform:translateX(-100%);
-  transition:.35s cubic-bezier(.4,0,.2,1);
-  z-index:1000;
-}
+#overlay{position:fixed;top:0;left:0;width:260px;max-width:80%;height:100vh;background:linear-gradient(180deg,var(--g3),#052e16);padding:2rem 1.5rem;transform:translateX(-100%);transition:.35s cubic-bezier(.4,0,.2,1);z-index:1000;}
 #overlay.show{transform:translateX(0);}
-#overlay a{
-  display:block;
-  margin:1.1rem 0;
-  font-size:1.2rem;
-  color:var(--accent);
-  text-decoration:none;
-}
+#overlay a{display:block;margin:1.1rem 0;font-size:1.2rem;color:var(--accent);text-decoration:none;}
 #overlay a:hover{color:white;}
-#backdrop{
-  position:fixed;top:0;left:0;width:100%;height:100%;
-  background:rgba(0,0,0,.4);
-  opacity:0;pointer-events:none;transition:opacity .3s;
-}
+#backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .3s;}
 #backdrop.show{opacity:1;pointer-events:auto;}
-
-/* ============== INPUT CARD ============== */
-#places{
-  position:absolute;top:90px;left:1rem;
-  background:white;
-  border-radius:12px;
-  padding:1rem;
-  box-shadow:0 8px 16px rgba(0,0,0,.15);
-  max-width:325px;width:90vw;
-}
+#places{position:absolute;top:90px;left:1rem;background:white;border-radius:12px;padding:1rem;box-shadow:0 8px 16px rgba(0,0,0,.15);max-width:325px;width:90vw;}
 #places input,#places button{width:100%;margin-bottom:.6rem;}
-#places button{
-  background:var(--g1);color:white;border:none;transition:.2s;
-}
+#places button{background:var(--g1);color:white;border:none;transition:.2s;}
 #places button:hover{background:var(--g3);transform:scale(1.02);}
-
-/* ============== MAP & SUMMARY ============== */
-#map{
-  flex:1;
-  min-height:65vh;
-  border-top:8px solid var(--accent);
-}
-#summary{
-  position:absolute;top:calc(90px + 100% + .5rem);left:1rem;
-  background:rgba(0,0,0,.75);
-  color:#e7ffe9;
-  padding:.5rem .8rem;
-  border-radius:8px;
-  font-size:.9rem;
-}
-
-/* Mobile tweaks */
-@media(max-width:600px){
-  #places{top:80px;}
-  #summary{left:1rem;right:1rem;}
-}
+#map{flex:1;min-height:65vh;border-top:8px solid var(--accent);}
+#summary{position:absolute;top:calc(90px + 100% + .5rem);left:1rem;background:rgba(0,0,0,.75);color:#e7ffe9;padding:.5rem .8rem;border-radius:8px;font-size:.9rem;}
+@media(max-width:600px){#places{top:80px;}#summary{left:1rem;right:1rem;}}
 </style>
 </head>
 
 <body>
-<!-- ======= HEADER ======= -->
 <header id="topbar">
   <h1 id="brand">GiveWay</h1>
   <button id="menuBtn">Menu</button>
 </header>
 
-<!-- ======= SIDE NAV ======= -->
 <nav id="overlay">
-   <!-- restored oldish destinations -->
    <a href="/student-signup">Student Sign Up</a>
    <a href="/volunteer">Volunteer</a>
    <a href="/login">Login</a>
 </nav>
 <div id="backdrop"></div>
 
-<!-- ======= INPUTS ======= -->
 <div id="places">
-   <input id="start" class="input" type="text" placeholder="Start location (e.g. York University)" />
-   <input id="midpoint" class="input" type="text" placeholder="Midpoint (optional)" />
-   <input id="end" class="input" type="text" placeholder="End location (e.g. Tim Hortons)" />
+   <input id="start" class="input" placeholder="Start location (e.g. York University)" />
+   <input id="midpoint" class="input" placeholder="Midpoint (optional)" />
+   <input id="end" class="input" placeholder="End location (e.g. Tim Hortons)" />
    <button id="routeBtn" class="button is-medium">Get Route</button>
 </div>
 
-<!-- ======= SUMMARY & MAP ======= -->
 <div id="summary"></div>
 <div id="map"></div>
 
-<!-- ======= SCRIPTS ======= -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
-/* ---------- SIDE NAV + RIPPLE ---------- */
-const menuBtn=document.getElementById('menuBtn'),
-      overlay=document.getElementById('overlay'),
-      backdrop=document.getElementById('backdrop');
-menuBtn.addEventListener('click',e=>{createRipple(e);toggleNav();});
-backdrop.addEventListener('click',toggleNav);
+/* ---------- NAV & RIPPLE ---------- */
+const menuBtn=document.getElementById('menuBtn'),overlay=document.getElementById('overlay'),backdrop=document.getElementById('backdrop');
+menuBtn.addEventListener('click',e=>{createRipple(e);toggleNav();});backdrop.addEventListener('click',toggleNav);
+function toggleNav(){overlay.classList.toggle('show');backdrop.classList.toggle('show');zoomControl.getContainer().style.display=overlay.classList.contains('show')?'none':'block';}
+function createRipple(e){const b=e.currentTarget,d=Math.max(b.clientWidth,b.clientHeight),c=document.createElement('span');c.style.width=c.style.height=d+'px';c.style.left=e.clientX-b.getBoundingClientRect().left-d/2+'px';c.style.top=e.clientY-b.getBoundingClientRect().top-d/2+'px';c.classList.add('ripple');b.querySelector('.ripple')?.remove();b.appendChild(c);}
 
-function toggleNav(){
-  overlay.classList.toggle('show');
-  backdrop.classList.toggle('show');
-  // hide / show zoom controls
-  zoomControl.getContainer().style.display =
-      overlay.classList.contains('show') ? 'none' : 'block';
-}
-function createRipple(e){
-  const btn=e.currentTarget;
-  const circle=document.createElement('span');
-  const d=Math.max(btn.clientWidth,btn.clientHeight),r=d/2;
-  circle.style.width=circle.style.height=`${d}px`;
-  circle.style.left=`${e.clientX-btn.getBoundingClientRect().left-r}px`;
-  circle.style.top =`${e.clientY-btn.getBoundingClientRect().top -r}px`;
-  circle.classList.add('ripple');
-  const prev=btn.querySelector('.ripple');if(prev)prev.remove();
-  btn.appendChild(circle);
+/* ---------- Haversine helper ---------- */
+function haversineKm(lat1,lon1,lat2,lon2){
+  const R=6371,toRad=d=>d*Math.PI/180,dLat=toRad(lat2-lat1),dLon=toRad(lon2-lon1);
+  const a=Math.sin(dLat/2)**2+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(a));
 }
 
 /* ---------- LEAFLET MAP ---------- */
-const map=L.map('map',{zoomControl:false}).setView([43.7,-79.4],10); // disable default control
-const zoomControl=L.control.zoom({position:'bottomright'}).addTo(map); // add bottom‑right
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-            {attribution:'© OpenStreetMap'}).addTo(map);
+const map=L.map('map',{zoomControl:false}).setView([43.7,-79.4],10);
+const zoomControl=L.control.zoom({position:'bottomright'}).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
 
 let routeLayer=null,stopMarkers=[];
 
-document.getElementById('routeBtn').addEventListener('click',async ()=>{
+document.getElementById('routeBtn').addEventListener('click',async()=>{
   const start=document.getElementById('start').value.trim(),
-        mid  =document.getElementById('midpoint').value.trim(),
-        end  =document.getElementById('end').value.trim();
+        mid=document.getElementById('midpoint').value.trim(),
+        end=document.getElementById('end').value.trim();
   if(!start||!end){alert('Please enter at least start & end locations');return;}
   const places=mid?[start,mid,end]:[start,end];
 
   try{
-    const res=await fetch('/api/route',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({places})
-    });
+    const res=await fetch('/api/route',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({places})});
     if(!res.ok) throw await res.json();
     const data=await res.json();
-    const sum = data.features[0].properties.summary;
-    document.getElementById('summary').innerHTML =
-      `<strong>Distance:</strong> ${(sum.distance/1000).toFixed(2)} km<br>
-       <strong>ETA:</strong> ${(sum.duration/60).toFixed(1)} min`;
 
-    /* clear old */
+    /* clear old layers */
     if(routeLayer) map.removeLayer(routeLayer);
     stopMarkers.forEach(m=>map.removeLayer(m)); stopMarkers=[];
 
-    /* draw route */
-    routeLayer=L.geoJSON(data,{
-      style:{color:getComputedStyle(document.documentElement).getPropertyValue('--accent')}
-    }).addTo(map);
+    /* draw route & fit map */
+    routeLayer=L.geoJSON(data,{style:{color:getComputedStyle(document.documentElement).getPropertyValue('--accent')}}).addTo(map);
     map.fitBounds(routeLayer.getBounds());
 
-    /* markers */
-    const coords=data.features[0].geometry.coordinates;
-    const stops=(places.length===2)
-        ? [coords[0],coords[coords.length-1]]
-        : [coords[0],coords[Math.floor(coords.length/2)],coords[coords.length-1]];
-    stops.forEach((c,i)=>{
-      stopMarkers.push(
-        L.circleMarker([c[1],c[0]],{radius:7,color:'#ff5252',fillOpacity:.9})
-         .bindPopup(`Stop ${i+1}: ${places[i]}`)
-         .addTo(map)
-      );
-    });
+    /* coords & stops for markers and carbon calc */
+    const routeCoords=data.features[0].geometry.coordinates;
+    const stops=places.length===2?[routeCoords[0],routeCoords.at(-1)]
+               :[routeCoords[0],routeCoords[Math.floor(routeCoords.length/2)],routeCoords.at(-1)];
 
-  }catch(err){
-    alert('Failed to get route: '+(err.error||err));
-  }
+    stops.forEach((c,i)=>stopMarkers.push(L.circleMarker([c[1],c[0]],{radius:7,color:'#ff5252',fillOpacity:.9}).bindPopup(`Stop ${i+1}: ${places[i]}`).addTo(map)));
+
+    /* summary with carbon saved */
+    const sum=data.features[0].properties.summary;
+    const optimizedKm=sum.distance/1000;
+    const startLon=routeCoords[0][0],startLat=routeCoords[0][1];
+    let baselineKm=0;
+    stops.forEach(c=>baselineKm+=2*haversineKm(startLat,startLon,c[1],c[0]));
+    const co2SavedKg=Math.max(0,baselineKm-optimizedKm)*0.252;
+
+    document.getElementById('summary').innerHTML=
+      `<strong>Distance:</strong> ${optimizedKm.toFixed(2)} km<br>
+       <strong>ETA:</strong> ${(sum.duration/60).toFixed(1)} min<br>
+       <strong>Carbon saved:</strong> ${co2SavedKg.toFixed(2)} kg CO₂`;
+
+  }catch(err){alert('Failed to get route: '+(err.error||err));}
 });
 </script>
 </body>
 </html>
+{% endraw %}
